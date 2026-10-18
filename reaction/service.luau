@@ -9,10 +9,14 @@ Keeps the sticker ready for the whole session and owns the trigger path:
   restarts it instead of closing it: a plain panel toggle would close it, and a
   closed plugin panel has no runtime to receive IPC at all.
 
-Trigger sources: the bar tile (same process, over the plugin state channel) and
-external callers such as a keybind:
+Callers are external: a keybind, a script, or another plugin (miixz/game-clip
+routes its trigger here when no game is focused):
 
     noctalia msg plugin miixz/reaction:service all trigger
+
+The bar tile does not come through here: it runs in the same process as the
+panel and calls noctalia.togglePanel itself, so a click works even in the moment
+this service is still starting.
 ]]
 
 local PANEL_ID = "miixz/reaction:sticker"
@@ -95,14 +99,5 @@ function onIpc(event, _payload)
     )
   end
 end
-
--- Local callers (bar tile) publish intent here.
-noctalia.state.watch("trigger", function()
-  show()
-end)
-
-noctalia.state.watch("hide", function()
-  hide()
-end)
 
 noctalia.setUpdateInterval(2000)
