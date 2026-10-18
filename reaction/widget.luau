@@ -1,25 +1,16 @@
 --[[
 Reaction bar tile.
 
-Left click shows the sticker and right click dismisses it. The tile drives the
-panel directly: noctalia.togglePanel runs in process, while publishing an event
-for the trigger service would race its startup (a state watch only fires on
-changes, so an event sent before the service registered its watch is lost).
+Left click shows the sticker, right click dismisses it. Both actions go through
+the shared sticker module (lib/sticker.luau), which runs in process: it either
+spawns the transparent overlay or toggles the panel fallback. Either way a
+second click while the sticker is on screen restarts it instead of closing it.
 
-While the sticker is already on screen the tile asks for a restart instead of a
-close, matching a second keypress: the open panel watches `restart` and starts
-itself over from zero. The panel publishes `visible`, which tints the glyph.
+The `visible` state tints the glyph: the panel sets it while it is open, and
+the overlay path sets it for the overlay's lifetime.
 ]]
 
-local PANEL_ID = "miixz/reaction:sticker"
-
-local function bump(key)
-  noctalia.state.set(key, (noctalia.state.get(key) or 0) + 1)
-end
-
-local function isVisible()
-  return noctalia.state.get("visible") == true
-end
+local Sticker = require("./lib/sticker.luau")
 
 local function tint(visible)
   barWidget.setGlyphColor(visible and "primary" or "on_surface_variant")
@@ -27,20 +18,14 @@ end
 
 barWidget.setGlyph("mood-smile")
 barWidget.setTooltip(noctalia.tr("widget.tooltip"))
-tint(isVisible())
+tint(Sticker.isVisible())
 
 function onClick()
-  if isVisible() then
-    bump("restart")
-    return
-  end
-  noctalia.togglePanel(PANEL_ID)
+  Sticker.show()
 end
 
 function onRightClick()
-  if isVisible() then
-    noctalia.togglePanel(PANEL_ID)
-  end
+  Sticker.hide()
 end
 
 noctalia.state.watch("visible", function(value)

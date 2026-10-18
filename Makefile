@@ -31,7 +31,7 @@ install:
 	@mkdir -p $(PREFIX)
 	@for plugin in $(PLUGINS); do \
 		rm -rf $(PREFIX)/$$plugin; \
-		rsync -a --exclude='.git' $(CURDIR)/$$plugin/ $(PREFIX)/$$plugin/; \
+		rsync -a --exclude='.git' --exclude='__pycache__' $(CURDIR)/$$plugin/ $(PREFIX)/$$plugin/; \
 		echo "installed $(PREFIX)/$$plugin"; \
 	done
 

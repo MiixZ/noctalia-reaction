@@ -14,6 +14,9 @@ screen is yours again.
 
 ## Requirements
 
+- For the transparent overlay: `python3` with GTK 3 bindings (`python-gobject`)
+  and `gtk-layer-shell`. Without them the trigger falls back to the panel entry,
+  which always paints the theme's card behind the sticker.
 - `ffmpeg` for animated GIFs (`magick` from ImageMagick works as a fallback;
   static images need neither).
 - A sticker file of your own. The plugin ships none.
@@ -39,7 +42,8 @@ while it is on screen), right click dismisses it. Add it from
 **Settings → Bar**, it renders a `mood-smile` glyph that tints with the primary
 colour while the sticker is up.
 
-The panel can also be driven directly, which is the plain open/close toggle:
+The fallback panel can also be driven directly, which is the plain open/close
+toggle:
 
 ```sh
 noctalia msg panel-toggle miixz/reaction:sticker
@@ -55,8 +59,9 @@ image stays for `hold_ms`. Either way the sticker fades out in the last 250 ms.
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
 | `sticker_path` | `file` | *(empty)* | PNG, JPEG, WebP, SVG or animated GIF to show. |
+| `sticker_position` | `select` | `center` | Where the sticker lands: the nine screen positions plus `auto`. For the overlay, `auto` behaves like `center`. |
 | `sound_path` | `file` | *(empty)* | Sound played when the sticker appears. |
-| `size_px` | `int` | `420` | Sticker box in logical pixels. The panel is 448 px, so up to 420 px fills the card. |
+| `size_px` | `int` | `420` | Sticker box in logical pixels; the image is scaled to fit inside it. In panel fallback, up to 420 fills the 448 px card. |
 | `opacity` | `double` | `1.0` | Maximum sticker opacity, before the fade-out. |
 | `hold_ms` | `int` | `2500` | How long a static sticker stays on screen. |
 | `extra_ms` | `int` | `250` | Extra time on screen after an animated GIF has finished. |
@@ -71,19 +76,25 @@ image stays for `hold_ms`. Either way the sticker fades out in the last 250 ms.
 
 ## Notes
 
-- The sticker is a **panel**, not a desktop widget: desktop widgets live on the
-  bottom layer and hide behind any window, which is useless for a reaction that
-  must land on top of a game.
-- Noctalia panels always paint the theme's rounded card behind their content, so
-  the sticker sits inside a themed card. `size_px` defaults to 420 because the
-  card is 448 px with 14 px of padding per side; a larger sticker would be
-  clipped.
-- The panel declares `keyboard_focus = "none"` and
-  `dismiss_on_outside_click = false`, so it never takes the keyboard away from
-  the application in use and clicks pass through to it.
+- The sticker is normally drawn by a companion process
+  (`bin/reaction-overlay.py`): a transparent layer-shell surface on the overlay
+  layer, above every window, with no background card at all. It ignores input
+  completely (clicks pass through to the application below) and closes itself
+  when its time is over. One instance runs at a time: a second trigger stops
+  the running one and starts over from the first frame.
+- The overlay reads `ui_scale` from the Noctalia accessibility settings, so a
+  scaled desktop shows a proportionally sized sticker instead of a small one.
+- Without the python stack, the trigger falls back to the `sticker` **panel**
+  entry. Noctalia panels always paint the theme's rounded card behind their
+  content, so the fallback sticker sits inside a themed card - the overlay
+  exists to avoid exactly that. The panel declares `keyboard_focus = "none"`
+  and `dismiss_on_outside_click = false`, so it never takes the keyboard away
+  from the application in use and clicks pass through to it.
 - Animated GIFs are unpacked into frames by the trigger service, once, into the
   plugin data directory (`.../plugins/data/miixz/reaction/gif-cache`). The cache
-  is keyed by file, size and modification time.
-- The trigger service runs for the whole session so the frames are ready before
-  the first press; a first-time extraction of a large GIF would otherwise be
-  visible as a late sticker.
+  is keyed by file, size and modification time. The overlay plays the GIF
+  natively, but the extracted frames are what tell it how long the animation
+  lasts.
+- The trigger service runs for the whole session so that the duration is ready
+  before the first press; a first-time extraction of a large GIF would
+  otherwise be visible as a late sticker.

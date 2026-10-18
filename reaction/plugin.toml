@@ -1,6 +1,6 @@
 # Reaction - heads-up sticker overlay with a sound.
 #
-#   sticker  [[panel]]   floating overlay above fullscreen windows, self-closing
+#   sticker  [[panel]]   fallback surface, self-closing (see below)
 #   trigger  [[service]] always on: owns the trigger path and warms the cache
 #   tile     [[widget]]  bar button: left click shows, right click dismisses
 #
@@ -8,10 +8,12 @@
 #
 #   noctalia msg plugin miixz/reaction:service all trigger
 #
-# The sticker is a panel because desktop widgets live on the bottom layer and
-# hide behind any window. Panel surfaces always paint the theme's card (Noctalia
-# has no decoration-less panel), so the sticker sits inside a themed rounded
-# card - the size_px default fills that card exactly.
+# The sticker is normally drawn by bin/reaction-overlay.py: a companion process
+# that creates a transparent layer-shell surface, so the image floats above
+# windows with no theme card behind it. The [[panel]] entry is the fallback for
+# systems without the python3 + GTK3 + gtk-layer-shell stack: a plugin panel
+# always paints the theme's rounded card (Noctalia has no decoration-less
+# panel), which is exactly what the overlay exists to avoid.
 
 id          = "miixz/reaction"
 name        = "Reaction"
@@ -23,9 +25,10 @@ icon        = "photo"
 description = "Shows a sticker image or animated GIF with a sound as a heads-up overlay, then closes itself."
 tags        = ["panel", "bar", "service", "animation", "audio", "fun"]
 
-# ffmpeg unpacks animated GIFs into frames. ImageMagick works as a fallback, but
-# only one of the two is required.
-dependencies = ["ffmpeg"]
+# ffmpeg (or ImageMagick) measures animated GIFs; the transparent overlay needs
+# python3 with GTK3 and gtk-layer-shell. Without the python stack the plugin
+# falls back to the panel entry, which shows the theme's card.
+dependencies = ["ffmpeg", "python3", "python-gobject", "gtk-layer-shell"]
 
 # Plugin-level settings: shared by the panel, the trigger service and the bar
 # tile, and edited under Settings -> Plugins.
@@ -37,6 +40,30 @@ extensions      = [".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"]
 label_key       = "settings.sticker_path.label"
 description_key = "settings.sticker_path.description"
 default         = ""
+
+# Declared here on purpose: the shell injects its own position field for panel
+# entries (sticker_position), and the settings editor hides that one when the
+# manifest already declares the same key. This way the single control drives
+# both the transparent overlay and the panel fallback, and the trigger service
+# can read it with noctalia.getConfig - injected fields never reach services.
+[[setting]]
+key             = "sticker_position"
+type            = "select"
+label_key       = "settings.sticker_position.label"
+description_key = "settings.sticker_position.description"
+default         = "center"
+options = [
+  { value = "top_left",      label_key = "settings.sticker_position.top_left" },
+  { value = "top_center",    label_key = "settings.sticker_position.top_center" },
+  { value = "top_right",     label_key = "settings.sticker_position.top_right" },
+  { value = "center_left",   label_key = "settings.sticker_position.center_left" },
+  { value = "center",        label_key = "settings.sticker_position.center" },
+  { value = "center_right",  label_key = "settings.sticker_position.center_right" },
+  { value = "bottom_left",   label_key = "settings.sticker_position.bottom_left" },
+  { value = "bottom_center", label_key = "settings.sticker_position.bottom_center" },
+  { value = "bottom_right",  label_key = "settings.sticker_position.bottom_right" },
+  { value = "auto",          label_key = "settings.sticker_position.auto" },
+]
 
 [[setting]]
 key             = "sound_path"

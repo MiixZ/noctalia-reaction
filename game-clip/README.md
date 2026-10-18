@@ -80,5 +80,8 @@ for `replay-stop`. There is nothing to enable at the start of a session.
   a "replay buffer is not running" notification instead of saving nothing.
 - On exit the plugin stops the buffer **it** started. If you drive the recorder
   yourself, set `manage_replay_buffer = false` and the plugin leaves it alone.
+- Saved clips (and normal recordings) land wherever the recorder puts them. With
+  `noctalia/screen_recorder` that is its **Output Directory** setting
+  (Settings → Plugins → Screen Recorder); `replay-save` takes no path of its own.
 - Commands are spawned with the shell (`noctalia.runAsync` string form), so
   pipes and `sh` syntax are allowed in every command setting.

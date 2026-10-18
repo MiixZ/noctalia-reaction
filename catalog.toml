@@ -16,7 +16,7 @@ description  = "Shows a sticker image or animated GIF with a sound as a heads-up
 deprecated   = false
 plugin_api   = 30
 tags         = ["panel", "bar", "service", "animation", "audio", "fun"]
-dependencies = ["ffmpeg"]
+dependencies = ["ffmpeg", "python3", "python-gobject", "gtk-layer-shell"]
 
 [[plugin]]
 id           = "miixz/game-clip"
