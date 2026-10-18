@@ -1,0 +1,32 @@
+# Index of the plugins in this repository, so a Noctalia shell can list them and
+# compat-check them without a full clone. Keep versions in sync with each
+# plugin's plugin.toml.
+#
+#   noctalia msg plugins source add miixz git https://github.com/MiixZ/noctalia-reaction
+#   noctalia msg plugins list
+
+[[plugin]]
+id           = "miixz/reaction"
+name         = "Reaction"
+version      = "0.2.0"
+author       = "miixz"
+license      = "MIT"
+icon         = "photo"
+description  = "Shows a sticker image or animated GIF with a sound as a heads-up overlay, then closes itself."
+deprecated   = false
+plugin_api   = 30
+tags         = ["panel", "bar", "service", "animation", "audio", "fun"]
+dependencies = ["ffmpeg"]
+
+[[plugin]]
+id           = "miixz/game-clip"
+name         = "Game Clip"
+version      = "0.1.0"
+author       = "miixz"
+license      = "MIT"
+icon         = "device-gamepad-2"
+description  = "Saves an instant replay clip while a game is in focus, and a reaction sticker otherwise."
+deprecated   = false
+plugin_api   = 30
+tags         = ["service", "gaming", "recording", "utility", "hyprland"]
+dependencies = ["gpu-screen-recorder"]

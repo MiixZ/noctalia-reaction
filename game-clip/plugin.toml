@@ -1,0 +1,107 @@
+# Game Clip - one hotkey, two behaviours.
+#
+# While a game is in focus the hotkey saves an instant-replay clip; otherwise it
+# shows a reaction sticker. The replay buffer is started and stopped together
+# with the game, so the encoder is idle (no GPU power, no VRAM, no RAM) during
+# desktop work.
+#
+# Both sides are plain commands, so the plugin works with any recorder and any
+# sticker provider. The defaults drive the official noctalia/screen_recorder
+# instant replay over its service IPC, and miixz/reaction.
+#
+# Bind a key to:
+#
+#   noctalia msg plugin miixz/game-clip:service all trigger
+
+id          = "miixz/game-clip"
+name        = "Game Clip"
+version     = "0.1.0"
+plugin_api  = 30
+author      = "miixz"
+license     = "MIT"
+icon        = "device-gamepad-2"
+description = "Saves an instant replay clip while a game is in focus, and a reaction sticker otherwise."
+tags        = ["service", "gaming", "recording", "utility", "hyprland"]
+
+# The buffer itself is gpu-screen-recorder, driven through the recorder plugin.
+dependencies = ["gpu-screen-recorder"]
+
+[[setting]]
+key             = "game_command"
+type            = "string"
+label_key       = "settings.game_command.label"
+description_key = "settings.game_command.description"
+default         = ""
+
+[[setting]]
+key             = "game_classes"
+type            = "string_list"
+label_key       = "settings.game_classes.label"
+description_key = "settings.game_classes.description"
+default         = ["steam_app_", "gamescope", ".exe", "proton", "wine", "heroic", "lutris", "bottles"]
+
+[[setting]]
+key             = "require_fullscreen"
+type            = "bool"
+label_key       = "settings.require_fullscreen.label"
+description_key = "settings.require_fullscreen.description"
+default         = true
+
+[[setting]]
+key             = "poll_ms"
+type            = "int"
+label_key       = "settings.poll_ms.label"
+description_key = "settings.poll_ms.description"
+default         = 2000
+min             = 250
+max             = 60000
+
+[[setting]]
+key             = "manage_replay_buffer"
+type            = "bool"
+label_key       = "settings.manage_replay_buffer.label"
+description_key = "settings.manage_replay_buffer.description"
+default         = true
+
+[[setting]]
+key             = "replay_start_command"
+type            = "string"
+label_key       = "settings.replay_start_command.label"
+description_key = "settings.replay_start_command.description"
+default         = "noctalia msg plugin noctalia/screen_recorder:service all replay-start"
+advanced        = true
+
+[[setting]]
+key             = "replay_stop_command"
+type            = "string"
+label_key       = "settings.replay_stop_command.label"
+description_key = "settings.replay_stop_command.description"
+default         = "noctalia msg plugin noctalia/screen_recorder:service all replay-stop"
+advanced        = true
+
+[[setting]]
+key             = "clip_command"
+type            = "string"
+label_key       = "settings.clip_command.label"
+description_key = "settings.clip_command.description"
+default         = "noctalia msg plugin noctalia/screen_recorder:service all replay-save"
+
+[[setting]]
+key             = "sticker_command"
+type            = "string"
+label_key       = "settings.sticker_command.label"
+description_key = "settings.sticker_command.description"
+default         = "noctalia msg plugin miixz/reaction:service all trigger"
+
+[[setting]]
+key             = "notify_errors"
+type            = "bool"
+label_key       = "settings.notify_errors.label"
+description_key = "settings.notify_errors.description"
+default         = true
+advanced        = true
+
+# Runs for the whole session: it is the watcher and the trigger target.
+[[service]]
+id    = "service"
+entry = "service.luau"

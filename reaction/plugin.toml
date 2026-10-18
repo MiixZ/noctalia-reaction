@@ -1,0 +1,109 @@
+# Reaction - heads-up sticker overlay with a sound.
+#
+#   sticker  [[panel]]   floating overlay above fullscreen windows, self-closing
+#   trigger  [[service]] always on: owns the trigger path and warms the cache
+#   tile     [[widget]]  bar button: left click shows, right click dismisses
+#
+# Trigger it from anywhere (keybind, script, another plugin):
+#
+#   noctalia msg plugin miixz/reaction:service all trigger
+#
+# The sticker is a panel because desktop widgets live on the bottom layer and
+# hide behind any window. Panel surfaces always paint the theme's card (Noctalia
+# has no decoration-less panel), so the sticker sits inside a themed rounded
+# card - the size_px default fills that card exactly.
+
+id          = "miixz/reaction"
+name        = "Reaction"
+version     = "0.2.0"
+plugin_api  = 30
+author      = "miixz"
+license     = "MIT"
+icon        = "photo"
+description = "Shows a sticker image or animated GIF with a sound as a heads-up overlay, then closes itself."
+tags        = ["panel", "bar", "service", "animation", "audio", "fun"]
+
+# ffmpeg unpacks animated GIFs into frames. ImageMagick works as a fallback, but
+# only one of the two is required.
+dependencies = ["ffmpeg"]
+
+# Plugin-level settings: shared by the panel, the trigger service and the bar
+# tile, and edited under Settings -> Plugins.
+
+[[setting]]
+key             = "sticker_path"
+type            = "file"
+extensions      = [".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"]
+label_key       = "settings.sticker_path.label"
+description_key = "settings.sticker_path.description"
+default         = ""
+
+[[setting]]
+key             = "sound_path"
+type            = "file"
+extensions      = [".wav", ".ogg", ".mp3", ".opus", ".flac"]
+label_key       = "settings.sound_path.label"
+description_key = "settings.sound_path.description"
+default         = ""
+
+[[setting]]
+key             = "size_px"
+type            = "int"
+label_key       = "settings.size_px.label"
+description_key = "settings.size_px.description"
+default         = 420
+min             = 64
+max             = 420
+
+[[setting]]
+key             = "opacity"
+type            = "double"
+label_key       = "settings.opacity.label"
+description_key = "settings.opacity.description"
+default         = 1.0
+min             = 0.1
+max             = 1.0
+
+[[setting]]
+key             = "hold_ms"
+type            = "int"
+label_key       = "settings.hold_ms.label"
+description_key = "settings.hold_ms.description"
+default         = 2500
+min             = 200
+max             = 20000
+advanced        = true
+
+[[setting]]
+key             = "extra_ms"
+type            = "int"
+label_key       = "settings.extra_ms.label"
+description_key = "settings.extra_ms.description"
+default         = 250
+min             = 0
+max             = 5000
+advanced        = true
+
+# The overlay itself: floating, centered, above fullscreen windows, and with no
+# keyboard focus so it never steals input from the application in use.
+[[panel]]
+id                       = "sticker"
+entry                    = "panel.luau"
+placement                = "floating"
+position                 = "center"
+layer                    = "overlay"
+keyboard_focus           = "none"
+dismiss_on_outside_click = false
+persistent               = true
+width                    = 448
+height                   = 448
+
+# Owns the trigger path for the whole session.
+[[service]]
+id    = "service"
+entry = "service.luau"
+
+# Bar tile. Left click shows the sticker, right click dismisses it.
+[[widget]]
+id    = "tile"
+entry = "widget.luau"

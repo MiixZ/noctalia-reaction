@@ -1,0 +1,19 @@
+{
+  "settings.sticker_path.label": "Sticker image",
+  "settings.sticker_path.description": "PNG, JPEG, WebP, SVG or animated GIF shown over the screen. Bring your own file.",
+  "settings.sound_path.label": "Sound",
+  "settings.sound_path.description": "Sound played when the sticker appears.",
+  "settings.size_px.label": "Sticker size (px)",
+  "settings.size_px.description": "Sticker box, in logical pixels. The panel is 448 px, so up to 420 px fills the card edge to edge.",
+  "settings.opacity.label": "Opacity",
+  "settings.opacity.description": "Maximum sticker opacity, before the fade-out.",
+  "settings.hold_ms.label": "Hold time (ms)",
+  "settings.hold_ms.description": "How long a static sticker stays on screen.",
+  "settings.extra_ms.label": "Extra time after GIF (ms)",
+  "settings.extra_ms.description": "Keep the sticker visible this long after an animated GIF has finished.",
+  "panel.no_sticker": "No sticker configured",
+  "widget.tooltip": "Reaction sticker\nLeft click: show · Right click: dismiss",
+  "status.unset": "(not set)",
+  "notify.status.title": "Reaction",
+  "notify.status.body": "Sticker: {sticker}\nState: {state}"
+}

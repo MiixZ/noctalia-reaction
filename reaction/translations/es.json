@@ -1,0 +1,19 @@
+{
+  "settings.sticker_path.label": "Imagen del sticker",
+  "settings.sticker_path.description": "PNG, JPEG, WebP, SVG o GIF animado que se muestra sobre la pantalla. Usa tu propio archivo.",
+  "settings.sound_path.label": "Sonido",
+  "settings.sound_path.description": "Sonido que suena al aparecer el sticker.",
+  "settings.size_px.label": "Tamaño del sticker (px)",
+  "settings.size_px.description": "Caja del sticker, en píxeles lógicos. El panel mide 448 px, así que hasta 420 px llena el card de borde a borde.",
+  "settings.opacity.label": "Opacidad",
+  "settings.opacity.description": "Opacidad máxima del sticker, antes del desvanecido final.",
+  "settings.hold_ms.label": "Tiempo en pantalla (ms)",
+  "settings.hold_ms.description": "Cuánto tiempo permanece un sticker estático en pantalla.",
+  "settings.extra_ms.label": "Tiempo extra tras el GIF (ms)",
+  "settings.extra_ms.description": "Mantiene el sticker visible este tiempo después de que el GIF animado termine.",
+  "panel.no_sticker": "No hay sticker configurado",
+  "widget.tooltip": "Sticker de reacción\nClic izquierdo: mostrar · Clic derecho: ocultar",
+  "status.unset": "(sin configurar)",
+  "notify.status.title": "Reaction",
+  "notify.status.body": "Sticker: {sticker}\nEstado: {state}"
+}
