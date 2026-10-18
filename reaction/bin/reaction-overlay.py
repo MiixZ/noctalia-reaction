@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # Transparent sticker overlay for the reaction plugin.
 #
-# Shows one image (PNG/JPG or animated GIF) above every window on the primary
-# output with no background card of any kind. The surface lives on the
-# layer-shell overlay layer, ignores input entirely (fully click-through) and
-# closes itself once the requested duration is over.
+# Shows one image (PNG/JPG, or an animated GIF as a sequence of pre-extracted
+# PNG frames) above every window on the primary output with no background card
+# of any kind. The surface lives on the layer-shell overlay layer, ignores input
+# entirely (fully click-through) and closes itself once the requested duration
+# is over.
 #
 # Usage:
-#   reaction-overlay.py --path <file> [--position bottom_left] [--size 420]
+#   reaction-overlay.py --path <file> [--frames-dir <dir>]
+#                       [--position bottom_left] [--size 420]
 #                       [--duration 3000] [--fade 250] [--margin 8]
 #                       [--opacity 1.0] [--tag reaction]
 #   reaction-overlay.py --hide [--tag reaction]
@@ -18,18 +20,19 @@
 # shell. --duration is the total time on screen, fade included. --probe only
 # checks that the dependencies import and exits: the plugin uses it to decide
 # between this overlay and its panel fallback.
+#
+# Animated GIFs are played from the plugin's frame cache when `--frames-dir`
+# points at it (see lib/gif.luau): the directory holds a `metadata.json` with
+# the frame names and delays. Drawing those static frames keeps memory flat,
+# where driving a GdkPixbuf animation grows it by roughly one frame per tick.
 
 import argparse
+import json
 import os
 import signal
 import sys
-import warnings
 
 import gi
-
-# The GIF iteration API is GTimeVal-based (deprecated but still the only
-# manual-frame path in gdk-pixbuf); the warnings are noise for this script.
-warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -72,12 +75,40 @@ def unlink_quietly(path):
         pass
 
 
-def monotonic_timeval():
-    microseconds = GLib.get_monotonic_time()
-    tv = GLib.TimeVal()
-    tv.tv_sec = microseconds // 1_000_000
-    tv.tv_usec = microseconds % 1_000_000
-    return tv
+def load_frameset(frames_dir):
+    """Read a frame cache written by lib/gif.luau.
+
+    Returns (paths, durations_ms, total_ms). Raises OSError/ValueError when the
+    directory or its metadata.json is missing or unusable, so the caller can
+    fall back to the still-image path.
+    """
+    meta_path = os.path.join(frames_dir, "metadata.json")
+    with open(meta_path, "rb") as fh:
+        meta = json.load(fh)
+
+    names = [str(name) for name in meta["frames"]]
+    durations = [max(1, int(value)) for value in meta["durations"]]
+    if not names or len(durations) != len(names):
+        raise ValueError("frame set is empty or inconsistent")
+
+    paths = [os.path.join(frames_dir, name) for name in names]
+    missing = [path for path in paths if not os.path.isfile(path)]
+    if missing:
+        raise ValueError("missing frame: %s" % missing[0])
+
+    total_ms = sum(durations)
+    return paths, durations, max(1, total_ms)
+
+
+def frame_index(durations, total_ms, elapsed_ms):
+    """Index of the frame shown at elapsed_ms, looping over the animation."""
+    position = elapsed_ms % total_ms
+    acc = 0
+    for i, duration in enumerate(durations):
+        acc += duration
+        if position < acc:
+            return i
+    return len(durations) - 1
 
 
 def kill_previous(tag):
@@ -142,10 +173,28 @@ class Overlay:
         self.fade_ms = max(0, min(args.fade, args.duration))
         self.base_opacity = max(0.0, min(1.0, args.opacity))
 
-        animation = GdkPixbuf.PixbufAnimation.new_from_file(args.path)
-        self.iter = animation.get_iter(monotonic_timeval())
+        self.frames = None  # frame paths when playing an extracted GIF
+        self.durations = None  # per-frame delay in milliseconds
+        self.total_ms = 0
+        self.frame_pos = 0  # index of the frame currently loaded
+        self.pixbuf = None  # displayed frame, or the single still image
 
-        first = self.iter.get_pixbuf()
+        first = None
+        if args.frames_dir:
+            try:
+                frames, durations, total_ms = load_frameset(args.frames_dir)
+                first = GdkPixbuf.Pixbuf.new_from_file(frames[0])
+                self.frames, self.durations, self.total_ms = frames, durations, total_ms
+            except Exception as exc:  # noqa: BLE001 - any failure means fall back
+                sys.stderr.write(
+                    "reaction-overlay: frame cache unusable (%s), using --path\n" % exc
+                )
+                self.frames = None
+
+        if self.frames is None:
+            first = GdkPixbuf.Pixbuf.new_from_file(args.path)
+        self.pixbuf = first
+
         if first is None:
             sys.stderr.write("reaction-overlay: cannot read image\n")
             sys.exit(2)
@@ -192,7 +241,7 @@ class Overlay:
         )
 
     def on_draw(self, _area, cr):
-        pixbuf = self.iter.get_pixbuf()
+        pixbuf = self.pixbuf
         if pixbuf is None:
             return False
         factor = min(
@@ -210,9 +259,17 @@ class Overlay:
 
     def on_tick(self):
         now = GLib.get_monotonic_time() // 1000
-        if self.iter.advance(monotonic_timeval()):
-            self.area.queue_draw()
-        if now - self.start_ms >= self.args.duration:
+        elapsed = now - self.start_ms
+        if self.frames is not None:
+            index = frame_index(self.durations, self.total_ms, elapsed)
+            if index != self.frame_pos:
+                self.frame_pos = index
+                try:
+                    self.pixbuf = GdkPixbuf.Pixbuf.new_from_file(self.frames[index])
+                    self.area.queue_draw()
+                except Exception as exc:  # noqa: BLE001 - keep the last frame
+                    sys.stderr.write("reaction-overlay: frame load failed: %s\n" % exc)
+        if elapsed >= self.args.duration:
             Gtk.main_quit()
             return False
         if self.current_alpha() < 1.0:
@@ -249,6 +306,7 @@ class Overlay:
 def main():
     parser = argparse.ArgumentParser(description="reaction transparent sticker overlay")
     parser.add_argument("--path", default="")
+    parser.add_argument("--frames-dir", default="")
     parser.add_argument("--position", default="center", choices=sorted(POSITIONS))
     parser.add_argument("--size", type=float, default=420.0)
     parser.add_argument("--duration", type=int, default=3000)
@@ -277,6 +335,8 @@ def main():
         sys.stderr.write("reaction-overlay: file not found: %s\n" % path)
         return 2
     args.path = path
+    if args.frames_dir:
+        args.frames_dir = os.path.abspath(os.path.expanduser(args.frames_dir))
     Overlay(args).run()
     return 0
 

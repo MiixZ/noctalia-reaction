@@ -92,9 +92,10 @@ image stays for `hold_ms`. Either way the sticker fades out in the last 250 ms.
   from the application in use and clicks pass through to it.
 - Animated GIFs are unpacked into frames by the trigger service, once, into the
   plugin data directory (`.../plugins/data/miixz/reaction/gif-cache`). The cache
-  is keyed by file, size and modification time. The overlay plays the GIF
-  natively, but the extracted frames are what tell it how long the animation
-  lasts.
+  is keyed by file, size and modification time. The overlay plays those extracted
+  PNG frames directly, using the delays recorded in the cache's `metadata.json`;
+  driving gdk-pixbuf's own animation instead makes the overlay's memory grow by
+  roughly one frame per tick, so the static-frame path is what keeps it flat.
 - The trigger service runs for the whole session so that the duration is ready
   before the first press; a first-time extraction of a large GIF would
   otherwise be visible as a late sticker.

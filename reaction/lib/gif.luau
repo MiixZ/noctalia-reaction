@@ -82,6 +82,13 @@ function Gif:cacheDir(path, size)
   return string.format("%s/gif-cache/%s-%dpx", self.dataDir, safe, size)
 end
 
+-- Directory holding the extracted frames for a source at a size. A companion
+-- process can play those static frames directly instead of decoding the
+-- animated GIF, which keeps its memory flat during playback.
+function Gif:framesDir(path, size)
+  return self:cacheDir(path, size)
+end
+
 function Gif:reset()
   self.frames = nil
   self.durations = nil

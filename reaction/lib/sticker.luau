@@ -157,6 +157,21 @@ local function holdMs(path)
   return math.max(200, math.floor(setting("hold_ms", DEFAULT_HOLD_MS)))
 end
 
+-- Directory of pre-extracted PNG frames for an animated GIF, or nil when they
+-- are not ready (still extracting) or the sticker is a still image. The
+-- overlay plays these static frames instead of decoding the GIF: same look,
+-- but its memory stays flat instead of growing frame by frame.
+local function framesDir(path)
+  if not Gif.isGif(path) then
+    return nil
+  end
+  clip:setSource(path, sizePx())
+  if not clip:ready() then
+    return nil
+  end
+  return clip:framesDir(path, sizePx())
+end
+
 function Sticker.isVisible()
   return noctalia.state.get("visible") == true
 end
@@ -189,7 +204,7 @@ function Sticker.show()
 
   if probe() then
     playSound()
-    local launched = noctalia.runAsync({
+    local args = {
       "python3", scriptPath(),
       "--path", path,
       "--position", tostring(setting("sticker_position", "center")),
@@ -199,7 +214,13 @@ function Sticker.show()
       "--opacity", tostring(setting("opacity", 1.0)),
       "--margin", tostring(MARGIN),
       "--tag", TAG,
-    })
+    }
+    local dir = framesDir(path)
+    if dir then
+      table.insert(args, "--frames-dir")
+      table.insert(args, dir)
+    end
+    local launched = noctalia.runAsync(args)
     if not launched then
       noctalia.log("reaction: could not launch the overlay")
       return
