@@ -1,37 +1,67 @@
 {
-  "settings.sticker_path.label": "Imagen del sticker",
-  "settings.sticker_path.description": "PNG, JPEG, WebP, SVG o GIF animado que se muestra sobre la pantalla. Usa tu propio archivo.",
-  "settings.sticker_dir.label": "Carpeta de stickers",
-  "settings.sticker_dir.description": "Carpeta con archivos PNG, JPEG, WebP, SVG o GIF animados. Si está configurada, se elige uno en cada activación en lugar de la imagen única.",
-  "settings.sticker_selection.label": "Selección de sticker",
-  "settings.sticker_selection.description": "Cómo se elige el siguiente sticker de la carpeta.",
-  "settings.sticker_selection.random": "Aleatorio",
-  "settings.sticker_selection.sequential": "Secuencial",
-  "settings.sticker_position.label": "Posición del sticker",
-  "settings.sticker_position.description": "Dónde aparece el sticker en pantalla. «Auto» lo mantiene centrado.",
-  "settings.sticker_position.top_left": "Arriba izquierda",
-  "settings.sticker_position.top_center": "Arriba centro",
-  "settings.sticker_position.top_right": "Arriba derecha",
-  "settings.sticker_position.center_left": "Centro izquierda",
-  "settings.sticker_position.center": "Centro",
-  "settings.sticker_position.center_right": "Centro derecha",
-  "settings.sticker_position.bottom_left": "Abajo izquierda",
-  "settings.sticker_position.bottom_center": "Abajo centro",
-  "settings.sticker_position.bottom_right": "Abajo derecha",
-  "settings.sticker_position.auto": "Auto",
-  "settings.sound_path.label": "Sonido",
-  "settings.sound_path.description": "Sonido que suena al aparecer el sticker.",
-  "settings.size_px.label": "Tamaño del sticker (px)",
-  "settings.size_px.description": "Caja del sticker, en píxeles lógicos. La imagen siempre se ajusta dentro de este cuadrado.",
-  "settings.opacity.label": "Opacidad",
-  "settings.opacity.description": "Opacidad máxima del sticker, antes del desvanecido final.",
-  "settings.hold_ms.label": "Tiempo en pantalla (ms)",
-  "settings.hold_ms.description": "Cuánto tiempo permanece un sticker estático en pantalla.",
-  "settings.extra_ms.label": "Tiempo extra tras el GIF (ms)",
-  "settings.extra_ms.description": "Mantiene el sticker visible este tiempo después de que el GIF animado termine.",
-  "panel.no_sticker": "No hay sticker configurado",
-  "widget.tooltip": "Sticker de reacción\nClic izquierdo: mostrar · Clic derecho: ocultar",
-  "status.unset": "(sin configurar)",
-  "notify.status.title": "Reaction",
-  "notify.status.body": "Sticker: {sticker}\nEstado: {state}"
+  "settings": {
+    "sticker_path": {
+      "label": "Imagen del sticker",
+      "description": "PNG, JPEG, WebP, SVG o GIF animado que se muestra sobre la pantalla. Usa tu propio archivo."
+    },
+    "sticker_dir": {
+      "label": "Carpeta de stickers",
+      "description": "Carpeta con archivos PNG, JPEG, WebP, SVG o GIF animados. Si está configurada, se elige uno en cada activación en lugar de la imagen única."
+    },
+    "sticker_selection": {
+      "label": "Selección de sticker",
+      "description": "Cómo se elige el siguiente sticker de la carpeta.",
+      "random": "Aleatorio",
+      "sequential": "Secuencial"
+    },
+    "sticker_position": {
+      "label": "Posición del sticker",
+      "description": "Dónde aparece el sticker en pantalla. «Auto» lo mantiene centrado.",
+      "top_left": "Arriba izquierda",
+      "top_center": "Arriba centro",
+      "top_right": "Arriba derecha",
+      "center_left": "Centro izquierda",
+      "center": "Centro",
+      "center_right": "Centro derecha",
+      "bottom_left": "Abajo izquierda",
+      "bottom_center": "Abajo centro",
+      "bottom_right": "Abajo derecha",
+      "auto": "Auto"
+    },
+    "sound_path": {
+      "label": "Sonido",
+      "description": "Sonido que suena al aparecer el sticker."
+    },
+    "size_px": {
+      "label": "Tamaño del sticker (px)",
+      "description": "Caja del sticker, en píxeles lógicos. La imagen siempre se ajusta dentro de este cuadrado."
+    },
+    "opacity": {
+      "label": "Opacidad",
+      "description": "Opacidad máxima del sticker, antes del desvanecido final."
+    },
+    "hold_ms": {
+      "label": "Tiempo en pantalla (ms)",
+      "description": "Cuánto tiempo permanece un sticker estático en pantalla."
+    },
+    "extra_ms": {
+      "label": "Tiempo extra tras el GIF (ms)",
+      "description": "Mantiene el sticker visible este tiempo después de que el GIF animado termine."
+    }
+  },
+  "panel": {
+    "no_sticker": "No hay sticker configurado"
+  },
+  "widget": {
+    "tooltip": "Sticker de reacción\nClic izquierdo: mostrar · Clic derecho: ocultar"
+  },
+  "status": {
+    "unset": "(sin configurar)"
+  },
+  "notify": {
+    "status": {
+      "title": "Reaction",
+      "body": "Sticker: {sticker}\nEstado: {state}"
+    }
+  }
 }
