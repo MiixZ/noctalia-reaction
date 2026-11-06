@@ -56,7 +56,7 @@ jobs:
             ref=""
           fi
 
-          manifest_version="$(python3 -c 'import tomllib; print(tomllib.load(open("plugin.toml", "rb"))["version"])')"
+          manifest_version="$(python3 -c 'import tomllib; print(tomllib.load(open("${PLUGIN_DIR}/plugin.toml", "rb"))["version"])')"
 
           if [ -n "${ref}" ]; then
             version="${ref#v}"
@@ -133,7 +133,7 @@ jobs:
             --exclude='.github' \
             --exclude='/Makefile' \
             --exclude='/LICENSE' \
-            ./ "${target}/"
+            "${PLUGIN_DIR}/" "${target}/"
 
       - name: Validate the community manifest
         run: |
