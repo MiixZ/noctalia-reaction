@@ -67,6 +67,7 @@ The thumbnail was generated with the official
 - [x] `version` follows semver and is bumped in this PR; `plugin_api` is the oldest API level this plugin requires.
 - [x] Every non-English translation in this PR uses a locale supported by Noctalia core, and I can read, write, and
       understand that language well enough to review and maintain it (no unreviewed machine/LLM translations).
+- [x] Code identifiers and code comments are in English.
 - [x] I did not edit `catalog.toml`; CI generates it.
 - [x] This PR touches exactly one plugin directory.
 
