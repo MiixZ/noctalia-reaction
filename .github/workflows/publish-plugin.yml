@@ -56,7 +56,7 @@ jobs:
             ref=""
           fi
 
-          manifest_version="$(python3 -c 'import tomllib; print(tomllib.load(open("${PLUGIN_DIR}/plugin.toml", "rb"))["version"])')"
+          manifest_version="$(python3 -c "import tomllib; print(tomllib.load(open('${PLUGIN_DIR}/plugin.toml', 'rb'))['version'])")"
 
           if [ -n "${ref}" ]; then
             version="${ref#v}"
