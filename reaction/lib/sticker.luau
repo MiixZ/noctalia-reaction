@@ -8,7 +8,8 @@ the whole show/hide path:
 
 * It probes the companion once (python3 + GTK3 + gtk-layer-shell). The probe is
   optimistic until it answers.
-* With the overlay, `show` plays the sound and (re)spawns the sticker; a second
+* With the overlay, `show` picks a sticker from the configured folder (or the
+  single fallback file), plays the sound and (re)spawns the sticker; a second
   trigger while it is on screen replaces the running instance, which restarts
   the animation.
 * Without it, everything falls back to the `miixz/reaction:sticker` panel: a
@@ -16,8 +17,9 @@ the whole show/hide path:
   own sound and tracks its own visibility, so this module only toggles it.
 
 Each entry script runs in its own Luau runtime (the service and the bar tile),
-so every caller gets its own instance of this module and of the GIF clip. The
-shared frame cache on disk keeps that cheap.
+so every caller gets its own instance of this module. The shared frame cache on
+ disk keeps that cheap, and we keep one Gif instance per source path so changing
+from one trigger to the next does not force a re-extraction.
 ]]
 
 local Gif = require("./gif.luau")
@@ -29,13 +31,18 @@ local TAG = "miixz-reaction"
 local FADE_MS = 250
 local DEFAULT_HOLD_MS = 2500
 
+-- Very short GIFs loop until they have been on screen at least this long.
+local MIN_GIF_HOLD_MS = 1500
+
 -- Distance from the screen edge, in Noctalia logical pixels. Matches the
 -- shell's floating-offset so the sticker is placed like other floating panels.
 local MARGIN = 8
 
 local dataDir = noctalia.pluginDataDir() or ("/tmp/noctalia-reaction-" .. tostring(os.time()))
 
-local clip = Gif.new({ dataDir = dataDir, onLog = noctalia.log })
+-- One Gif extractor per source path. Keeps each animation ready after the first
+-- extraction, even as the active sticker changes on every trigger.
+local clips = {}
 
 -- nil = not probed yet, true/false = companion usable or not.
 local overlay = nil
@@ -44,6 +51,15 @@ local overlay = nil
 local sound = { path = nil, name = nil, ready = false, pending = false }
 
 local Sticker = {}
+
+local SUPPORTED_EXTS = {
+  ["png"] = true,
+  ["jpg"] = true,
+  ["jpeg"] = true,
+  ["webp"] = true,
+  ["svg"] = true,
+  ["gif"] = true,
+}
 
 local function setting(key, fallback)
   local value = noctalia.getConfig(key)
@@ -55,6 +71,14 @@ end
 
 local function stickerPath()
   return setting("sticker_path", "")
+end
+
+local function stickerDir()
+  return setting("sticker_dir", "")
+end
+
+local function selectionMode()
+  return setting("sticker_selection", "random")
 end
 
 local function sizePx()
@@ -122,6 +146,62 @@ local function playSound()
   end
 end
 
+local function getClip(path)
+  if clips[path] == nil then
+    clips[path] = Gif.new({ dataDir = dataDir, onLog = noctalia.log })
+  end
+  return clips[path]
+end
+
+-- Resolve all supported images in the configured folder, or fall back to the
+-- single sticker_path file.
+function Sticker.candidates()
+  local dir = stickerDir()
+  local candidates = {}
+
+  if dir ~= "" then
+    dir = noctalia.expandPath(dir) or dir
+    local entries = noctalia.listDir(dir)
+    if entries then
+      for _, name in ipairs(entries) do
+        local ext = name:lower():match("%.([^.]+)$")
+        if ext and SUPPORTED_EXTS[ext] then
+          table.insert(candidates, dir .. "/" .. name)
+        end
+      end
+      table.sort(candidates)
+    end
+  end
+
+  if #candidates == 0 then
+    local single = stickerPath()
+    if single ~= "" then
+      table.insert(candidates, single)
+    end
+  end
+
+  return candidates
+end
+
+local function pick(candidates)
+  local n = #candidates
+  if n == 0 then
+    return nil
+  end
+  if n == 1 then
+    return candidates[1]
+  end
+
+  if selectionMode() == "sequential" then
+    local last = noctalia.state.get("seq_index") or 0
+    local idx = (last % n) + 1
+    noctalia.state.set("seq_index", idx)
+    return candidates[idx]
+  end
+
+  return candidates[math.random(1, n)]
+end
+
 -- One-off check that the companion can run. A missing python3 or a failed
 -- import flips the whole module to the panel fallback.
 local function probe()
@@ -146,12 +226,15 @@ local function probe()
 end
 
 -- How long the sticker stays on screen: the GIF's measured duration plus
--- extra_ms, or hold_ms for still images and while the frames are extracting.
+-- extra_ms, looped if needed to reach MIN_GIF_HOLD_MS, or hold_ms for still
+-- images and while the frames are extracting.
 local function holdMs(path)
-  if Gif.isGif(path) then
+  if path and Gif.isGif(path) then
+    local clip = getClip(path)
     clip:setSource(path, sizePx())
     if clip:ready() then
-      return clip:durationMs() + math.max(0, math.floor(setting("extra_ms", 250)))
+      local ms = clip:durationMs() + math.max(0, math.floor(setting("extra_ms", 250)))
+      return math.max(MIN_GIF_HOLD_MS, ms)
     end
   end
   return math.max(200, math.floor(setting("hold_ms", DEFAULT_HOLD_MS)))
@@ -162,9 +245,10 @@ end
 -- overlay plays these static frames instead of decoding the GIF: same look,
 -- but its memory stays flat instead of growing frame by frame.
 local function framesDir(path)
-  if not Gif.isGif(path) then
+  if not path or not Gif.isGif(path) then
     return nil
   end
+  local clip = getClip(path)
   clip:setSource(path, sizePx())
   if not clip:ready() then
     return nil
@@ -192,13 +276,41 @@ local function rememberVisible(hold)
   noctalia.state.set("visible_until", noctalia.nowMs() + hold)
 end
 
+-- Pre-extract frames for every candidate GIF so the first trigger is instant.
+function Sticker.warm()
+  for _, path in ipairs(Sticker.candidates()) do
+    if Gif.isGif(path) then
+      local clip = getClip(path)
+      clip:setSource(path, sizePx())
+    end
+  end
+end
+
+function Sticker.isReady(path)
+  if not path or path == "" then
+    return false
+  end
+  if not Gif.isGif(path) then
+    return true
+  end
+  local clip = getClip(path)
+  clip:setSource(path, sizePx())
+  return clip:ready()
+end
+
 function Sticker.show()
-  local path = stickerPath()
-  if path == "" then
+  local candidates = Sticker.candidates()
+  local path = pick(candidates)
+
+  if path == nil or path == "" then
     -- Nothing configured: the panel shows the setup hint (with its card).
     noctalia.togglePanel(PANEL_ID)
     return
   end
+
+  -- Publish the chosen path so the panel fallback (a separate runtime) shows
+  -- the same sticker instead of reading the config again.
+  noctalia.state.set("current_path", path)
 
   local hold = holdMs(path)
 
@@ -266,5 +378,8 @@ function Sticker.tick()
     noctalia.state.set("visible_until", 0)
   end
 end
+
+-- Seed once so random selection is actually varied across triggers.
+math.randomseed(noctalia.nowMs())
 
 return Sticker

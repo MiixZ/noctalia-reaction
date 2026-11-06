@@ -59,6 +59,8 @@ image stays for `hold_ms`. Either way the sticker fades out in the last 250 ms.
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
 | `sticker_path` | `file` | *(empty)* | PNG, JPEG, WebP, SVG or animated GIF to show. |
+| `sticker_dir` | `folder` | *(empty)* | Folder with supported images. When set, the plugin picks one on each trigger instead of using `sticker_path`. `sticker_path` still works as a fallback. |
+| `sticker_selection` | `select` | `random` | How the next sticker is chosen from `sticker_dir`: `random` or `sequential`. |
 | `sticker_position` | `select` | `center` | Where the sticker lands: the nine screen positions plus `auto`. For the overlay, `auto` behaves like `center`. |
 | `sound_path` | `file` | *(empty)* | Sound played when the sticker appears. |
 | `size_px` | `int` | `420` | Sticker box in logical pixels; the image is scaled to fit inside it. In panel fallback, up to 420 fills the 448 px card. |

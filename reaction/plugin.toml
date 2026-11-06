@@ -17,7 +17,7 @@
 
 id          = "miixz/reaction"
 name        = "Reaction"
-version     = "0.3.0"
+version     = "0.4.0"
 plugin_api  = 30
 author      = "miixz"
 license     = "MIT"
@@ -40,6 +40,27 @@ extensions      = [".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"]
 label_key       = "settings.sticker_path.label"
 description_key = "settings.sticker_path.description"
 default         = ""
+
+# Optional: when set, the plugin chooses one supported image from this folder
+# on each trigger instead of always using sticker_path. sticker_path still acts
+# as a fallback when the folder is empty or unset.
+[[setting]]
+key             = "sticker_dir"
+type            = "folder"
+label_key       = "settings.sticker_dir.label"
+description_key = "settings.sticker_dir.description"
+default         = ""
+
+[[setting]]
+key             = "sticker_selection"
+type            = "select"
+label_key       = "settings.sticker_selection.label"
+description_key = "settings.sticker_selection.description"
+default         = "random"
+options = [
+  { value = "random",    label_key = "settings.sticker_selection.random" },
+  { value = "sequential", label_key = "settings.sticker_selection.sequential" },
+]
 
 # Declared here on purpose: the shell injects its own position field for panel
 # entries (sticker_position), and the settings editor hides that one when the

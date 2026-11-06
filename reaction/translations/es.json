@@ -1,6 +1,12 @@
 {
   "settings.sticker_path.label": "Imagen del sticker",
   "settings.sticker_path.description": "PNG, JPEG, WebP, SVG o GIF animado que se muestra sobre la pantalla. Usa tu propio archivo.",
+  "settings.sticker_dir.label": "Carpeta de stickers",
+  "settings.sticker_dir.description": "Carpeta con archivos PNG, JPEG, WebP, SVG o GIF animados. Si está configurada, se elige uno en cada activación en lugar de la imagen única.",
+  "settings.sticker_selection.label": "Selección de sticker",
+  "settings.sticker_selection.description": "Cómo se elige el siguiente sticker de la carpeta.",
+  "settings.sticker_selection.random": "Aleatorio",
+  "settings.sticker_selection.sequential": "Secuencial",
   "settings.sticker_position.label": "Posición del sticker",
   "settings.sticker_position.description": "Dónde aparece el sticker en pantalla. «Auto» lo mantiene centrado.",
   "settings.sticker_position.top_left": "Arriba izquierda",

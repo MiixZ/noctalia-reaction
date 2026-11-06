@@ -27,7 +27,7 @@ not pay for an idle encoder.
 
 | Plugin | What it does | Entries |
 | --- | --- | --- |
-| [`reaction`](reaction/) | Sticker image or animated GIF with a sound, above fullscreen windows, self-closing | Panel `sticker`, bar widget `tile`, service `service` |
+| [`reaction`](reaction/) | Sticker image or animated GIF with a sound, above fullscreen windows, self-closing; can also pick randomly/sequentially from a folder | Panel `sticker`, bar widget `tile`, service `service` |
 | [`game-clip`](game-clip/) | Watches the focused window; saves an instant replay while gaming, shows the sticker otherwise | Service `service` |
 
 Each plugin directory has its own README with the settings, IPC commands and

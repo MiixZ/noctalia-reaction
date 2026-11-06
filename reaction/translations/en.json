@@ -1,6 +1,12 @@
 {
   "settings.sticker_path.label": "Sticker image",
   "settings.sticker_path.description": "PNG, JPEG, WebP, SVG or animated GIF shown over the screen. Bring your own file.",
+  "settings.sticker_dir.label": "Sticker folder",
+  "settings.sticker_dir.description": "Folder with PNG, JPEG, WebP, SVG or animated GIF files. If set, one is picked on each trigger instead of the single sticker image.",
+  "settings.sticker_selection.label": "Sticker selection",
+  "settings.sticker_selection.description": "How the next sticker is chosen from the folder.",
+  "settings.sticker_selection.random": "Random",
+  "settings.sticker_selection.sequential": "Sequential",
   "settings.sticker_position.label": "Sticker position",
   "settings.sticker_position.description": "Where the sticker appears on screen. Auto keeps it centered.",
   "settings.sticker_position.top_left": "Top left",

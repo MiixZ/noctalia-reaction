@@ -22,7 +22,7 @@ path, the requested size or the source file's mtime/size changed.
 
 -- Bump when the cache layout or the transparency handling changes, so stale
 -- caches on disk are ignored instead of being reused.
-local CACHE_VERSION = 2
+local CACHE_VERSION = 6
 
 local Gif = {}
 Gif.__index = Gif
@@ -174,23 +174,33 @@ local function parseMagickDurations(stdout)
   return durations, total
 end
 
--- ffprobe prints absolute presentation timestamps, so delays are the gaps
--- between consecutive values.
+-- ffprobe prints absolute presentation timestamps. Frame i's delay is the gap
+-- to frame i+1; the last frame keeps the previous delay so looping stays smooth.
 local function parseFfmpegDurations(stdout)
-  local durations, total, lastMs = {}, 0, 0
+  local pts = {}
   for line in stdout:gmatch("[^\r\n]+") do
     local sec = tonumber(line)
     if sec then
-      local ms = math.floor(sec * 1000)
-      local delta = ms - lastMs
-      lastMs = ms
-      if delta <= 0 then
-        delta = 33
-      end
-      table.insert(durations, delta)
-      total = total + delta
+      table.insert(pts, math.floor(sec * 1000))
     end
   end
+
+  local durations, total = {}, 0
+  for i = 1, #pts - 1 do
+    local delta = pts[i + 1] - pts[i]
+    if delta <= 0 then
+      delta = 33
+    end
+    table.insert(durations, delta)
+    total = total + delta
+  end
+
+  -- Last frame: ffprobe does not give a following timestamp, so reuse the
+  -- previous delay (or a sane default if there is only one frame).
+  local lastDelta = (#durations > 0 and durations[#durations]) or 100
+  table.insert(durations, lastDelta)
+  total = total + lastDelta
+
   return durations, total
 end
 
@@ -212,6 +222,33 @@ local function frameNames(count, firstIndex)
   return names
 end
 
+-- How many frame-XXX.png files are actually present in the cache directory.
+local function countExtractedFrames(cacheDir)
+  local entries = noctalia.listDir(cacheDir)
+  if not entries then
+    return 0
+  end
+  local n = 0
+  for _, name in ipairs(entries) do
+    if name:match("^frame%-%d%d%d%.png$") then
+      n = n + 1
+    end
+  end
+  return n
+end
+
+local function clearFrames(cacheDir)
+  local entries = noctalia.listDir(cacheDir)
+  if not entries then
+    return
+  end
+  for _, name in ipairs(entries) do
+    if name:match("^frame%-%d%d%d%.png$") then
+      noctalia.removeFile(cacheDir .. "/" .. name)
+    end
+  end
+end
+
 function Gif:_extractWithMagick(path, cacheDir, size, sourceMtime, sourceSize)
   self.log("gif: extracting with ImageMagick (" .. size .. "px)")
 
@@ -229,7 +266,7 @@ function Gif:_extractWithMagick(path, cacheDir, size, sourceMtime, sourceSize)
       durations, totalMs, count = { 100 }, 100, 1
     end
 
-    if framesPresent(cacheDir, count, 0) then
+    if framesPresent(cacheDir, count, 0) and countExtractedFrames(cacheDir) == count then
       self:_finish(cacheDir, frameNames(count, 0), durations, totalMs, "magick", sourceMtime, sourceSize)
       return
     end
@@ -269,7 +306,7 @@ function Gif:_extractWithFfmpeg(path, cacheDir, size, sourceMtime, sourceSize)
     end
 
     -- ffmpeg numbers output frames from 1, ImageMagick from 0.
-    if framesPresent(cacheDir, count, 1) then
+    if framesPresent(cacheDir, count, 1) and countExtractedFrames(cacheDir) == count then
       self:_finish(cacheDir, frameNames(count, 1), durations, totalMs, "ffmpeg", sourceMtime, sourceSize)
       return
     end
@@ -285,6 +322,22 @@ function Gif:_extractWithFfmpeg(path, cacheDir, size, sourceMtime, sourceSize)
         self:_extractWithMagick(path, cacheDir, size, sourceMtime, sourceSize)
         return
       end
+
+      -- ffmpeg sometimes emits intermediate/tween frames for transparent or
+      -- blended GIFs, while ffprobe only reports the logical frames. Playing
+      -- only the logical subset against the tween frames produces incomplete or
+      -- choppy animations, so fall back to ImageMagick when the counts disagree.
+      local actualCount = countExtractedFrames(cacheDir)
+      if actualCount ~= count then
+        self.log(string.format(
+          "gif: ffmpeg extracted %d frames but ffprobe reported %d, using ImageMagick",
+          actualCount, count
+        ))
+        clearFrames(cacheDir)
+        self:_extractWithMagick(path, cacheDir, size, sourceMtime, sourceSize)
+        return
+      end
+
       self:_finish(cacheDir, frameNames(count, 1), durations, totalMs, "ffmpeg", sourceMtime, sourceSize)
     end)
   end)
@@ -304,6 +357,11 @@ function Gif:_startExtraction(path, cacheDir, size)
     self.loading = false
     return
   end
+
+  -- Stale or missing metadata: wipe any leftover PNGs so the next extraction
+  -- starts from a clean directory and cannot accidentally reuse a partial or
+  -- mismatched old frame set.
+  clearFrames(cacheDir)
 
   if noctalia.commandExists("ffmpeg") and noctalia.commandExists("ffprobe") then
     self:_extractWithFfmpeg(path, cacheDir, size, mtime, bytes)

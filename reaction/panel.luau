@@ -8,7 +8,9 @@ windows without taking the keyboard away from the application in use.
 
 The panel runtime only exists while the panel is open, so the trigger logic
 lives in service.luau: the service opens this panel, and restarts it over the
-plugin state channel when the sticker is already on screen.
+plugin state channel when the sticker is already on screen. The active sticker
+path is published by the service as `current_path`; this panel reads that first
+and only falls back to the configured folder/file if it is missing.
 ]]
 
 local PANEL_ID = "miixz/reaction:sticker"
@@ -17,6 +19,10 @@ local PANEL_ID = "miixz/reaction:sticker"
 -- measurable duration (static images, failed extraction).
 local DEFAULT_HOLD_MS = 2500
 local FADE_MS = 250
+
+-- Very short GIFs loop until they have been on screen at least this long.
+local MIN_GIF_HOLD_MS = 1500
+
 -- How long to keep waiting for a still-loading GIF before giving up on it.
 local LOAD_GRACE_MS = 8000
 
@@ -33,6 +39,15 @@ local elapsedMs = 0
 -- Sound bank: one loaded sound per configured path.
 local sound = { path = nil, name = nil, ready = false, pending = false }
 
+local SUPPORTED_EXTS = {
+  ["png"] = true,
+  ["jpg"] = true,
+  ["jpeg"] = true,
+  ["webp"] = true,
+  ["svg"] = true,
+  ["gif"] = true,
+}
+
 local function setting(key, fallback)
   local value = noctalia.getConfig(key)
   if value == nil then
@@ -41,8 +56,30 @@ local function setting(key, fallback)
   return value
 end
 
-local function stickerPath()
+local function firstCandidate()
+  local dir = setting("sticker_dir", "")
+  if dir ~= "" then
+    dir = noctalia.expandPath(dir) or dir
+    local entries = noctalia.listDir(dir)
+    if entries then
+      table.sort(entries)
+      for _, name in ipairs(entries) do
+        local ext = name:lower():match("%.([^.]+)$")
+        if ext and SUPPORTED_EXTS[ext] then
+          return dir .. "/" .. name
+        end
+      end
+    end
+  end
   return setting("sticker_path", "")
+end
+
+local function stickerPath()
+  local active = noctalia.state.get("current_path")
+  if active and active ~= "" then
+    return active
+  end
+  return firstCandidate()
 end
 
 local function boxPx()
@@ -57,10 +94,11 @@ local function isAnimated()
   return Gif.isGif(stickerPath())
 end
 
--- How long the sticker stays on screen.
+-- How long the sticker stays on screen. Short GIFs loop to reach the minimum.
 local function holdMs()
   if isAnimated() and clip:ready() then
-    return clip:durationMs() + math.max(0, math.floor(setting("extra_ms", 250)))
+    local ms = clip:durationMs() + math.max(0, math.floor(setting("extra_ms", 250)))
+    return math.max(MIN_GIF_HOLD_MS, ms)
   end
   return math.max(200, math.floor(setting("hold_ms", DEFAULT_HOLD_MS)))
 end

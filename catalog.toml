@@ -8,11 +8,11 @@
 [[plugin]]
 id           = "miixz/reaction"
 name         = "Reaction"
-version      = "0.2.0"
+version      = "0.4.0"
 author       = "miixz"
 license      = "MIT"
 icon         = "photo"
-description  = "Shows a sticker image or animated GIF with a sound as a heads-up overlay, then closes itself."
+description  = "Shows a sticker image or animated GIF with a sound as a heads-up overlay, then closes itself. Can pick randomly or sequentially from a folder."
 deprecated   = false
 plugin_api   = 30
 tags         = ["panel", "bar", "service", "animation", "audio", "fun"]
