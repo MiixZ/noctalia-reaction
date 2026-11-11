@@ -14,6 +14,12 @@ with a sound, then let it close itself. It can pick a single file or choose
 randomly/sequentially from a folder of stickers, so one keypress can cycle
 through a whole set of reaction GIFs.
 
+The trigger key is deliberately not a plugin setting. Noctalia does not expose
+global shortcuts to plugins, so the key is any compositor keybind that runs
+`noctalia msg plugin miixz/reaction:service all trigger`. `README.md` documents
+that command together with ready-to-paste Hyprland, Niri and Sway examples, so the
+user picks their own key in the compositor instead of a hardcoded one.
+
 The plugin ships three entries:
 
 - `service` owns the trigger path and keeps GIF frame caches warm.
@@ -42,8 +48,9 @@ in `README.md`.
 What was exercised:
 
 - The plugin is installed and enabled on the author's Hyprland session with
-  Noctalia 5.2.1. G3 triggers the sticker through `miixz/game-clip` when no game
-  is focused.
+  Noctalia 5.2.1. The sticker is triggered by a compositor keybind that runs
+  `noctalia msg plugin miixz/reaction:service all trigger`; every other
+  activation path (bar tile, direct IPC) was exercised too.
 - Single-file mode, folder mode with random selection, and sequential selection
   were tested with multiple GIFs and static images.
 - Short GIFs loop to stay on screen for at least 1.5 s.
